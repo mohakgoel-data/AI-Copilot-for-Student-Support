@@ -1,6 +1,5 @@
 alembic
 sqlalchemy
-os
 dotenv
 llama_cloud
 datetime

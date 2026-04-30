@@ -5,6 +5,7 @@ from llama_index.core.node_parser import MarkdownNodeParser
 
 
 
+
 def get_nodes_from_markdown(markdown_text: str):
     
     parser = MarkdownNodeParser()
@@ -14,6 +15,7 @@ def get_nodes_from_markdown(markdown_text: str):
     nodes = parser.get_nodes_from_documents([document])
 
     return nodes
+
 
 
 
@@ -63,6 +65,7 @@ def create_logical_blocks(nodes):
         logical_blocks.append(block)
 
     return logical_blocks
+
 
 
 
