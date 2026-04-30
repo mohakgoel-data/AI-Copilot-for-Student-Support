@@ -27,15 +27,3 @@ def parse_document(file_path: str):
     return full_markdown
 
 
-# FINAL PIPELINE (ENTRY POINT)
-def run_pipeline(file_path: str):
-
-    # Step 1: Parse
-    markdown = parse_document(file_path)
-
-    # Step 2: LlamaIndex processing
-    blocks = process_markdown(markdown, file_path)
-
-    return blocks
-
-
