@@ -4,9 +4,7 @@ from llama_index.core import Document
 from llama_index.core.node_parser import MarkdownNodeParser
 
 
-# ---------------------------
-# STEP 1: Chunking (Header-based)
-# ---------------------------
+
 def get_nodes_from_markdown(markdown_text: str):
     
     parser = MarkdownNodeParser()
@@ -18,23 +16,18 @@ def get_nodes_from_markdown(markdown_text: str):
     return nodes
 
 
-# ---------------------------
-# STEP 2: Clean Header Text
-# ---------------------------
+
 def clean_header(header: str):
     if not header:
         return "Root"
 
     return re.sub(r'^\d+(\.\d+)*\s*', '', header).strip()
-
+     
 
 def build_hierarchy(parts):
     return " > ".join(parts) if parts else "Root"
 
 
-# ---------------------------
-# STEP 3: Attach Metadata (Passport)
-# ---------------------------
 def attach_metadata(nodes, filename: str):
 
     for node in nodes:
@@ -52,9 +45,7 @@ def attach_metadata(nodes, filename: str):
     return nodes
 
 
-# ---------------------------
-# STEP 4: Convert to Logical Blocks
-# ---------------------------
+
 def create_logical_blocks(nodes):
 
     logical_blocks = []
@@ -74,18 +65,14 @@ def create_logical_blocks(nodes):
     return logical_blocks
 
 
-# ---------------------------
-# FINAL PIPELINE (LLAMA INDEX ONLY)
-# ---------------------------
+
 def process_markdown(markdown_text: str, file_path: str):
 
-    # Step 1: Markdown → Nodes
+
     nodes = get_nodes_from_markdown(markdown_text)
 
-    # Step 2: Metadata
     nodes = attach_metadata(nodes, file_path)
 
-    # Step 3: Logical Blocks
     logical_blocks = create_logical_blocks(nodes)
 
     return logical_blocks

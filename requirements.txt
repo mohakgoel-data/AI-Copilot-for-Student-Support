@@ -1,0 +1,8 @@
+alembic
+sqlalchemy
+os
+dotenv
+llama_cloud
+datetime
+langchain
+langchain-text-splitters
