@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Session
 from sqlalchemy.dialects.postgresql import insert as pg_insert
-from models import Document, DocumentChunk
+from ..models import Document, DocumentChunk
 
 def sync_data_to_db(session: Session, filename: str, file_hash: str, chunk_records: list):
     try:
