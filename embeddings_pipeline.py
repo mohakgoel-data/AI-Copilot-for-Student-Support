@@ -1,3 +1,4 @@
+
 import hashlib
 from google import genai
 import os
@@ -8,16 +9,15 @@ load_dotenv()
 client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
 
 
-def build_vector_records(final_chunks):
+def build_vector_records(final_chunks,doc_id):
     records = []
 
-    for chunk in final_chunks:
+    for index, chunk in enumerate(final_chunks):
         content = chunk["content"]
         metadata = chunk["metadata"]
 
-        
-        chunk_id = hashlib.sha256(content.encode()).hexdigest()
-
+        hash_input = f"{doc_id}-{index}-{content}"
+        chunk_id = hashlib.sha256(hash_input.encode()).hexdigest()
         
         response = client.models.embed_content(
             model="models/gemini-embedding-001",
