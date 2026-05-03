@@ -2,9 +2,9 @@ from fastapi import FastAPI, UploadFile, File, Depends
 from sqlalchemy.orm import Session
 
 from db import SessionLocal
-from database_manager import sync_data_to_db
-from parser import parse_document
-from embeddings_pipeline import build_vector_records
+from ingestion_pipeline.database_manager import sync_data_to_db
+from ingestion_pipeline.parser import parse_document
+from ingestion_pipeline.embeddings_pipeline import build_vector_records
 
 
 import hashlib
