@@ -2,16 +2,21 @@ import os
 from dotenv import load_dotenv
 from llama_cloud import LlamaCloud
 
-from llama_index_pipeline import process_markdown
+from ingestion_pipeline.llama_index_pipeline import process_markdown
 
 load_dotenv()
 
 
-def parse_document(file_path: str):
+def parse_document(file):
+
     client = LlamaCloud(api_key=os.getenv("LLAMA_CLOUD_API_KEY"))
 
-    with open(file_path, "rb") as f:
-        file_obj = client.files.create(file=f, purpose="parse")
+    file.seek(0)
+
+    file_obj = client.files.create(
+        file=file,
+        purpose="parse"
+    )
 
     result = client.parsing.parse(
         file_id=file_obj.id,
@@ -25,5 +30,4 @@ def parse_document(file_path: str):
     )
 
     return full_markdown
-
 
