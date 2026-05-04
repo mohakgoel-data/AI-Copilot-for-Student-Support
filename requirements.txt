@@ -5,3 +5,4 @@ llama_cloud
 datetime
 langchain
 langchain-text-splitters
+FastAPI
