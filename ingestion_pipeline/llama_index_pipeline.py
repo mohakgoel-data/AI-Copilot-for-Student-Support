@@ -52,14 +52,44 @@ def create_logical_blocks(nodes):
 
     logical_blocks = []
 
+    pending_header = None
+    pending_metadata = None
+
     for node in nodes:
 
+        content = node.text.strip()
+
+        metadata = {
+            "source_name": node.metadata.get("source_name"),
+            "hierarchy": node.metadata.get("hierarchy")
+        }
+
+        lines = content.splitlines()
+
+        
+        if (
+            len(lines) == 1
+            and lines[0].startswith("#")
+        ):
+
+            pending_header = content
+            pending_metadata = metadata
+
+            continue
+
+        
+        if pending_header:
+
+            content = f"{pending_header}\n\n{content}"
+
+            metadata = pending_metadata
+
+            pending_header = None
+            pending_metadata = None
+
         block = {
-            "content": node.text.strip(),
-            "metadata": {
-                "source_name": node.metadata.get("source_name"),
-                "hierarchy": node.metadata.get("hierarchy")
-            }
+            "content": content,
+            "metadata": metadata
         }
 
         logical_blocks.append(block)
