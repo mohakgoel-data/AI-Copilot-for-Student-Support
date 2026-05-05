@@ -2,8 +2,6 @@ import os
 from dotenv import load_dotenv
 from llama_cloud import LlamaCloud
 
-from ingestion_pipeline.llama_index_pipeline import process_markdown
-
 load_dotenv()
 
 
