@@ -24,22 +24,26 @@ def get_db():
 @app.post("/upload")
 async def upload_pdf(file: UploadFile = File(...), db: Session = Depends(get_db)):
 
-    # 1. Extract text
+    # 1. Generate file hash from original PDF bytes
+    file_bytes = await file.read()
+    file_hash = hashlib.sha256(file_bytes).hexdigest()
+
+    # Reset file pointer so parser can read the file
+    file.file.seek(0)
+
+    # 2. Extract text
     text_data = parse_document(file.file)
 
     if not text_data or not text_data.strip():
         return {"error": "No text found in PDF"}
 
-    # 2. Generate file hash
-    file_hash = hashlib.sha256(text_data.encode()).hexdigest()
+   # 3. Create logical chunks using markdown pipeline
+    from ingestion_pipeline.llama_index_pipeline import process_markdown
 
-    # 3. Chunk text
-    raw_chunks = text_data.split("\n\n")
-
-    final_chunks = [
-        {"content": chunk.strip(), "metadata": {"source": file.filename}}
-        for chunk in raw_chunks if chunk.strip()
-    ]
+    final_chunks = process_markdown(
+    markdown_text=text_data,
+    file_path=file.filename
+    )
 
     # 4. Generate embeddings
     records = build_vector_records(final_chunks, file_hash)
