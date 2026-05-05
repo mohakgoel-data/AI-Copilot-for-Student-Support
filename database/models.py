@@ -2,6 +2,7 @@ from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Text, JSON
 from sqlalchemy.orm import declarative_base, relationship
 from datetime import datetime
 from pgvector.sqlalchemy import Vector
+from sqlalchemy.sql import func
 
 Base = declarative_base()
 
@@ -10,8 +11,8 @@ class Document(Base):
     id = Column(Integer, primary_key=True) 
     filename = Column(String, nullable=False)
     file_hash = Column(String, unique=True) 
-    created_at = Column(DateTime, default=datetime.utcnow)
-
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    
 class DocumentChunk(Base):
     __tablename__ = "document_chunks"
 
@@ -25,3 +26,15 @@ class DocumentChunk(Base):
     metadata_json = Column(JSON) 
 
     document = relationship("Document")
+
+class ChatMessage(Base):
+    __tablename__ = 'chat_messages'
+
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, index=True) 
+    role = Column(String)
+    content = Column(Text)
+    
+    source_metadata = Column(JSONB, nullable=True) 
+    
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
