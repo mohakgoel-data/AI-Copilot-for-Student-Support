@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import text
 from dotenv import load_dotenv
 from sqlalchemy import text
+from database.models import ChatMessage
 
 load_dotenv()
 
@@ -56,3 +57,13 @@ def search_relevant_chunks(session: Session, query_vector: list, top_k: int = 6)
     except Exception as e:
         print(f"Database search error: {e}")
         return []
+    
+def get_chat_history(session: Session, user_id: int, limit: int = 6):
+
+    messages = session.query(ChatMessage)\
+        .filter(ChatMessage.user_id == user_id)\
+        .order_by(ChatMessage.created_at.desc())\
+        .limit(limit)\
+        .all()
+    
+    return [{"role": m.role, "parts": [m.content]} for m in reversed(messages)]
