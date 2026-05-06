@@ -43,7 +43,7 @@ class ChatMessage(Base):
 
     role = Column(String(20))
 
-    content = Column(Text(length=5000))
+    content = Column(String(5000))
 
     source_metadata = Column(JSON, nullable=True)
 
