@@ -11,6 +11,8 @@ import hashlib
 
 app = FastAPI()
 
+MAX_FILE_SIZE = 10 * 1024 * 1024
+
 
 # DB dependency
 def get_db():
@@ -24,20 +26,22 @@ def get_db():
 @app.post("/upload")
 async def upload_pdf(file: UploadFile = File(...), db: Session = Depends(get_db)):
 
-    # 1. Generate file hash from original PDF bytes
     file_bytes = await file.read()
+
+    if len(file_bytes) > MAX_FILE_SIZE:
+        return {
+            "error": "PDF exceeds maximum allowed size of 10 MB."
+        }
+    
     file_hash = hashlib.sha256(file_bytes).hexdigest()
 
-    # Reset file pointer so parser can read the file
     file.file.seek(0)
 
-    # 2. Extract text
     text_data = parse_document(file.file)
 
     if not text_data or not text_data.strip():
         return {"error": "No text found in PDF"}
 
-   # 3. Create logical chunks using markdown pipeline
     from ingestion_pipeline.llama_index_pipeline import process_markdown
 
     final_chunks = process_markdown(
@@ -45,10 +49,8 @@ async def upload_pdf(file: UploadFile = File(...), db: Session = Depends(get_db)
     file_path=file.filename
     )
 
-    # 4. Generate embeddings
     records = build_vector_records(final_chunks, file_hash)
 
-    # 5. Store in DB
     doc_id = sync_data_to_db(db, file.filename, file_hash, records)
 
     return {
