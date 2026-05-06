@@ -7,6 +7,8 @@ from retrieval import get_query_embedding,search_relevant_chunks
 load_dotenv()
 client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
 
+MAX_QUERY_LENGTH = 1000
+
 def assemble_prompt(query_text, search_results):
     docs_xml = "<docs>\n"
     for res in search_results:
@@ -40,6 +42,13 @@ def assemble_prompt(query_text, search_results):
     return final_prompt
 
 def generate_response(session: Session, student_query: str):
+
+    if len(student_query) > MAX_QUERY_LENGTH:
+        return {
+            "answer": f"Query exceeds maximum allowed length of {MAX_QUERY_LENGTH} characters.",
+            "sources": []
+        }
+    
     query_vector = get_query_embedding(student_query)
     raw_results = search_relevant_chunks(session, query_vector, top_k=6)
     filtered_results = [r for r in raw_results if r['score'] > 0.47]
