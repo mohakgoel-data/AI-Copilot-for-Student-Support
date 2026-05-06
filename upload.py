@@ -2,9 +2,10 @@ from fastapi import FastAPI, UploadFile, File, Depends
 from sqlalchemy.orm import Session
 
 from db import SessionLocal
-from ingestion_pipeline.database_manager import sync_data_to_db
+from database.database_manager import sync_data_to_db
 from ingestion_pipeline.parser import parse_document
 from ingestion_pipeline.embeddings_pipeline import build_vector_records
+from generation import generate_response
 
 
 import hashlib
@@ -58,3 +59,11 @@ async def upload_pdf(file: UploadFile = File(...), db: Session = Depends(get_db)
         "doc_id": doc_id,
         "total_chunks": len(records)
     }
+
+@app.post("/ask")
+def ask_question(student_query: str, db: Session = Depends(get_db)):
+
+    return generate_response(
+        session=db,
+        student_query=student_query
+    )
