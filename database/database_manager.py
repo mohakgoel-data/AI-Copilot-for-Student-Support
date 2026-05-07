@@ -1,6 +1,7 @@
 from sqlalchemy.orm import Session
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from database.models import Document, DocumentChunk
+from database.models import ChatMessage
 
 def sync_data_to_db(session: Session, filename: str, file_hash: str, chunk_records: list):
     try:
@@ -41,3 +42,22 @@ def sync_data_to_db(session: Session, filename: str, file_hash: str, chunk_recor
 
     finally:
         session.close()
+
+def save_message(session, user_id, role, content, source_metadata=None):
+    try:
+        message = ChatMessage(
+            user_id=user_id,
+            role=role,
+            content=content,
+            source_metadata=source_metadata
+        )
+
+        session.add(message)
+        session.commit()
+        session.refresh(message) 
+        return message
+
+    except Exception as e:
+        session.rollback()
+        print(f"Failed to save message to DB: {e}")
+        return None
