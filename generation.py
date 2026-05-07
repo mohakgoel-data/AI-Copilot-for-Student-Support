@@ -2,8 +2,8 @@ import os
 from google import genai
 from sqlalchemy.orm import Session
 from dotenv import load_dotenv
-from retrieval import get_query_embedding,search_relevant_chunks
-from chat_manager import save_message
+from retrieval import get_query_embedding,search_relevant_chunks,get_chat_history,optimize_search_query
+from database.database_manager import save_message
 
 load_dotenv()
 client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
@@ -38,18 +38,14 @@ def assemble_prompt(query_text, search_results):
 
     {docs_xml}
 
-    USER QUESTION: {query_text}
+    Using the documents above, answer the student's latest question: "{query_text}"
     """
     return final_prompt
 
 def generate_response(session: Session, student_query: str):
 
-    save_message(
-        session=session,
-        user_id=1,
-        role="user",
-        content=student_query
-    )
+    user_id=1
+
 
     if len(student_query) > MAX_QUERY_LENGTH:
         return {
@@ -57,7 +53,9 @@ def generate_response(session: Session, student_query: str):
             "sources": []
         }
     
-    query_vector = get_query_embedding(student_query)
+    history=get_chat_history(session, user_id, limit=6)
+    search_term = optimize_search_query(history, student_query)
+    query_vector = get_query_embedding(search_term)
     raw_results = search_relevant_chunks(session, query_vector, top_k=6)
     filtered_results = [r for r in raw_results if r['score'] > 0.47]
 
@@ -83,6 +81,12 @@ def generate_response(session: Session, student_query: str):
             contents=prompt
         )
 
+        save_message(
+            session=session,
+            user_id=1,
+            role="user",
+            content=student_query
+        )
         save_message(
             session=session,
             user_id=1,

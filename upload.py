@@ -1,7 +1,7 @@
 from fastapi import FastAPI, UploadFile, File, Depends
 from sqlalchemy.orm import Session
 
-from db import SessionLocal
+from database.db import SessionLocal
 from database.database_manager import sync_data_to_db
 from ingestion_pipeline.parser import parse_document
 from ingestion_pipeline.embeddings_pipeline import build_vector_records
