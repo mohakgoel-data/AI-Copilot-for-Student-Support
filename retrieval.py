@@ -24,7 +24,7 @@ def get_query_embedding(query_text: str):
         return None
     
 
-def search_relevant_chunks(session: Session, query_vector: list, top_k: int = 6):
+def search_relevant_chunks(session: Session, query_vector: list, top_k: int = 5):
 
     vector_str = str(query_vector)
 
