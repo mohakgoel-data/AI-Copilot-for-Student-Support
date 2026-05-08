@@ -6,3 +6,6 @@ datetime
 langchain
 langchain-text-splitters
 FastAPI
+python-jose
+passlib
+bcrypt
