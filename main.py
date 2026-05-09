@@ -1,4 +1,5 @@
 from fastapi import FastAPI, UploadFile, File, Depends, HTTPException, Header, APIRouter, status
+from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 
 from database.db import SessionLocal
@@ -7,10 +8,14 @@ from database.models import User
 from ingestion_pipeline.parser import parse_document
 from ingestion_pipeline.embeddings_pipeline import build_vector_records
 from generation import generate_response
-from auth import get_current_user_data, TokenResponse, create_access_token, UserRegister,verify_password, get_current_user
-
+from auth import hash_password, TokenResponse, create_access_token, UserRegister,verify_password, get_current_user
+import os
+from dotenv import load_dotenv
 import hashlib
 
+
+
+load_dotenv()
 app = FastAPI()
 
 MAX_FILE_SIZE = 10 * 1024 * 1024
@@ -89,15 +94,63 @@ def create_guest_user(db: Session = Depends(get_db)):
     return {"access_token": token}
 
 @router.post("/login", response_model=TokenResponse)
-def login(user_in: UserRegister, db: Session = Depends(get_db)):
-    user = db.query(User).filter(User.email == user_in.email).first()
-    
-    # Verify password against the 'blender' result in DB
-    if not user or not verify_password(user_in.password, user.password_hash):
-        raise HTTPException(status_code=401, detail="Invalid credentials")
-    
-    # Issue token with their real ID and Admin status
-    token = create_access_token(data={"user_id": user.id, "is_admin": user.is_admin})
+def login(
+    form_data: OAuth2PasswordRequestForm = Depends(),
+    db: Session = Depends(get_db)
+):
+    user = db.query(User).filter(
+        User.email == form_data.username
+    ).first()
+    if not user or not verify_password(
+        form_data.password,
+        user.password_hash
+    ):
+        raise HTTPException(
+            status_code=401,
+            detail="Invalid credentials"
+        )
+    token = create_access_token(
+        data={
+            "user_id": user.id,
+            "is_admin": user.is_admin
+        }
+    )
     return {"access_token": token}
 
+ADMIN_CREATION_KEY = os.getenv("ADMIN_CREATION_KEY")
+
+@router.post("/register-admin")
+def register_admin(user_in: UserRegister, master_key: str, db: Session = Depends(get_db)):
+
+    if master_key != ADMIN_CREATION_KEY:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, 
+            detail="Invalid Master Key"
+        )
+
+    existing_user = db.query(User).filter(User.email == user_in.username).first()
+    if existing_user:
+        raise HTTPException(status_code=400, detail="User already exists")
+
+    hashed_password = hash_password(user_in.password)
+    new_admin = User(
+        email=user_in.username,
+        password_hash=hashed_password,
+        is_admin=True
+    )
+    
+    db.add(new_admin)
+    db.commit()
+    return {"message": "Admin account created successfully"}
+
 app.include_router(router)
+
+
+from fastapi.middleware.cors import CORSMiddleware
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
