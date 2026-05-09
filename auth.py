@@ -2,9 +2,22 @@ import os
 from datetime import datetime, timedelta
 from jose import jwt, JWTError
 from passlib.context import CryptContext
+from pydantic import BaseModel, EmailStr
+from typing import Optional
+from fastapi.security import OAuth2PasswordBearer
+from fastapi import Depends, HTTPException
 from dotenv import load_dotenv
 
 load_dotenv()
+
+
+class UserRegister(BaseModel):
+    email: EmailStr
+    password: str
+
+class TokenResponse(BaseModel):
+    access_token: str
+    token_type: str = "bearer"
 
 SECRET_KEY = os.getenv("SECRET_KEY") 
 ALGORITHM = "HS256"
@@ -40,3 +53,12 @@ def get_current_user_data(token: str):
         
     except JWTError:
         raise Exception("Could not validate credentials")
+    
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/login")
+
+def get_current_user(token: str = Depends(oauth2_scheme)):
+    # We use the 'get_current_user_data' function we built in auth.py
+    user_data = get_current_user_data(token) 
+    if not user_data:
+        raise HTTPException(status_code=401, detail="Invalid wristband!")
+    return user_data
