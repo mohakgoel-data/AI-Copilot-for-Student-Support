@@ -42,10 +42,7 @@ def assemble_prompt(query_text, search_results):
     """
     return final_prompt
 
-def generate_response(session: Session, student_query: str):
-
-    user_id=1
-
+def generate_response(session: Session, student_query: str, user_id:int):
 
     if len(student_query) > MAX_QUERY_LENGTH:
         return {
@@ -83,13 +80,13 @@ def generate_response(session: Session, student_query: str):
 
         save_message(
             session=session,
-            user_id=1,
+            user_id=user_id,
             role="user",
             content=student_query
         )
         save_message(
             session=session,
-            user_id=1,
+            user_id=user_id,
             role="model",
             content=response.text,
             source_metadata=source_metadata
