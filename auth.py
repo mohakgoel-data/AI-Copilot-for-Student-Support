@@ -12,7 +12,7 @@ load_dotenv()
 
 
 class UserRegister(BaseModel):
-    email: EmailStr
+    username: EmailStr
     password: str
 
 class TokenResponse(BaseModel):
