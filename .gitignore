@@ -6,3 +6,4 @@ venv/
 node_modules/
 test.py
 test_db.py
+index.html

@@ -7,6 +7,9 @@ from database.models import User
 from ingestion_pipeline.parser import parse_document
 from ingestion_pipeline.embeddings_pipeline import build_vector_records
 from generation import generate_response
+from fastapi import HTTPException
+from database.database_manager import delete_document
+from fastapi.security import OAuth2PasswordRequestForm
 from auth import get_current_user_data, TokenResponse, create_access_token, UserRegister,verify_password, get_current_user
 
 import hashlib
@@ -89,15 +92,50 @@ def create_guest_user(db: Session = Depends(get_db)):
     return {"access_token": token}
 
 @router.post("/login", response_model=TokenResponse)
-def login(user_in: UserRegister, db: Session = Depends(get_db)):
-    user = db.query(User).filter(User.email == user_in.email).first()
-    
-    # Verify password against the 'blender' result in DB
-    if not user or not verify_password(user_in.password, user.password_hash):
-        raise HTTPException(status_code=401, detail="Invalid credentials")
-    
-    # Issue token with their real ID and Admin status
-    token = create_access_token(data={"user_id": user.id, "is_admin": user.is_admin})
+def login(
+    form_data: OAuth2PasswordRequestForm = Depends(),
+    db: Session = Depends(get_db)
+):
+    user = db.query(User).filter(
+        User.email == form_data.username
+    ).first()
+    if not user or not verify_password(
+        form_data.password,
+        user.password_hash
+    ):
+        raise HTTPException(
+            status_code=401,
+            detail="Invalid credentials"
+        )
+    token = create_access_token(
+        data={
+            "user_id": user.id,
+            "is_admin": user.is_admin
+        }
+    )
     return {"access_token": token}
 
 app.include_router(router)
+
+@app.delete("/documents/{document_id}")
+def remove_document(
+    document_id: int,
+    db: Session = Depends(get_db)
+):
+
+    deleted_doc = delete_document(
+        session=db,
+        document_id=document_id
+    )
+
+    if not deleted_doc:
+        raise HTTPException(
+            status_code=404,
+            detail="Document not found"
+        )
+
+    return {
+        "message": "Document deleted successfully",
+        "document_id": document_id,
+        "filename": deleted_doc.filename
+    }
