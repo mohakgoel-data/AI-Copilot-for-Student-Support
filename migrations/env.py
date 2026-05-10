@@ -12,7 +12,7 @@ load_dotenv()
 
 config = context.config
 # This overrides the sqlalchemy.url in alembic.ini with the one from your .env
-config.set_main_option("sqlalchemy.url", os.getenv("DATABASE_URL"))
+config.set_main_option("sqlalchemy.url", os.getenv("DIRECT_URL"))
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
