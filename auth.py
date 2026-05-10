@@ -1,11 +1,11 @@
 import os
 from datetime import datetime, timedelta
-from jose import jwt, JWTError
+from jose import jwt, JWTError,ExpiredSignatureError
 from passlib.context import CryptContext
 from pydantic import BaseModel, EmailStr
 from typing import Optional
 from fastapi.security import OAuth2PasswordBearer
-from fastapi import Depends, HTTPException
+from fastapi import Depends, HTTPException,status
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -50,6 +50,12 @@ def get_current_user_data(token: str):
             raise Exception("Invalid Token: No User ID found")
             
         return {"user_id": user_id, "is_admin": is_admin}
+    
+    except ExpiredSignatureError:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Token has expired"
+        )
         
     except JWTError:
         raise Exception("Could not validate credentials")
