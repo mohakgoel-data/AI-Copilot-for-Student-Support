@@ -83,6 +83,36 @@ async def upload_pdf(file: UploadFile = File(...), db: Session = Depends(get_db)
         "total_chunks": len(records)
     }
 
+@app.delete("/documents/{document_id}")
+def remove_document(
+    document_id: int,
+    db: Session = Depends(get_db),
+    user_data: dict = Depends(get_current_user)
+):
+
+    if not user_data.get("is_admin"):
+        raise HTTPException(
+            status_code=403,
+            detail="Only admins can delete documents."
+        )
+
+    deleted_doc = delete_document(
+        session=db,
+        document_id=document_id
+    )
+
+    if not deleted_doc:
+        raise HTTPException(
+            status_code=404,
+            detail="Document not found"
+        )
+
+    return {
+        "message": "Document deleted successfully",
+        "document_id": document_id,
+        "filename": deleted_doc.filename
+    }
+
 router = APIRouter(
     prefix="/auth", # This adds '/auth' to the start of all these routes
     tags=["Authentication"]
@@ -125,28 +155,6 @@ def login(
 
 app.include_router(router)
 
-@app.delete("/documents/{document_id}")
-def remove_document(
-    document_id: int,
-    db: Session = Depends(get_db)
-):
-
-    deleted_doc = delete_document(
-        session=db,
-        document_id=document_id
-    )
-
-    if not deleted_doc:
-        raise HTTPException(
-            status_code=404,
-            detail="Document not found"
-        )
-
-    return {
-        "message": "Document deleted successfully",
-        "document_id": document_id,
-        "filename": deleted_doc.filename
-    }
 ADMIN_CREATION_KEY = os.getenv("ADMIN_CREATION_KEY")
 
 @router.post("/register-admin")
