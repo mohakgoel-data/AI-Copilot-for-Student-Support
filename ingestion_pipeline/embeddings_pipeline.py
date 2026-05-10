@@ -7,33 +7,42 @@ load_dotenv()
 
 client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
 
+import asyncio
 
-def build_vector_records(final_chunks, doc_id):
-    records = []
+TPM_LIMIT = 30000
+AVG_TOKENS_PER_CHUNK = 200
+SAFE_UTILIZATION = 0.8
 
-    contents = [chunk["content"] for chunk in final_chunks]
-   
-    response = client.models.embed_content(
-        model="models/gemini-embedding-001",
-        contents=contents
-    )
+MAX_CHUNKS_PER_BATCH = 90 #int(
+#     (TPM_LIMIT * SAFE_UTILIZATION) / AVG_TOKENS_PER_CHUNK
+# )
 
-    embeddings = [emb.values for emb in response.embeddings]
+async def build_vector_records_safe(final_chunks, file_hash):
+    batches = [
+        final_chunks[i:i + MAX_CHUNKS_PER_BATCH]
+        for i in range(0, len(final_chunks), MAX_CHUNKS_PER_BATCH)
+    ]
 
-    for index, (chunk, embedding) in enumerate(zip(final_chunks, embeddings)):
-        content = chunk["content"]
-        metadata = chunk["metadata"]
+    for i, batch in enumerate(batches):
+        print(f"Processing batch {i+1}/{len(batches)}")
 
-        hash_input = f"{doc_id}-{index}-{content}"
-        chunk_id = hashlib.sha256(hash_input.encode()).hexdigest()
+        contents = [chunk["content"] for chunk in batch]
 
-        record = {
-            "chunk_id": chunk_id,
-            "content": content,
-            "embedding": embedding,
-            "metadata": metadata
-        }
+        try:
+            response = await asyncio.to_thread(
+                client.models.embed_content,
+                model="models/gemini-embedding-001",
+                contents=contents
+            )
 
-        records.append(record)
+            for chunk, emb in zip(batch, response.embeddings):
+                chunk["embedding"] = emb.values
 
-    return records
+        except Exception as e:
+            print(f"Batch {i+1} failed: {e}")
+            raise Exception(f"Embedding pipeline failed at batch {i+1}")
+
+        if i < len(batches) - 1:
+            await asyncio.sleep(60)
+
+    return final_chunks

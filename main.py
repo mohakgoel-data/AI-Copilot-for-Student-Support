@@ -6,7 +6,9 @@ from database.db import SessionLocal
 from database.database_manager import sync_data_to_db
 from database.models import User
 from ingestion_pipeline.parser import parse_document
-from ingestion_pipeline.embeddings_pipeline import build_vector_records
+from ingestion_pipeline.llama_index_pipeline import process_markdown
+from ingestion_pipeline.refinement import refine_logical_blocks
+from ingestion_pipeline.embeddings_pipeline import build_vector_records_safe
 from generation import generate_response
 from fastapi import HTTPException
 from database.database_manager import delete_document
@@ -65,14 +67,13 @@ async def upload_pdf(file: UploadFile = File(...), db: Session = Depends(get_db)
     if not text_data or not text_data.strip():
         return {"error": "No text found in PDF"}
 
-    from ingestion_pipeline.llama_index_pipeline import process_markdown
-
-    final_chunks = process_markdown(
+    logical_blocks = process_markdown(
     markdown_text=text_data,
     file_path=file.filename
     )
+    final_chunks = refine_logical_blocks(logical_blocks, file_hash)
 
-    records = build_vector_records(final_chunks, file_hash)
+    records = await build_vector_records_safe(final_chunks, file_hash)
 
     doc_id = sync_data_to_db(db, file.filename, file_hash, records)
 

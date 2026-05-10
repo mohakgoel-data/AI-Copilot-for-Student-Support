@@ -13,6 +13,10 @@ def sync_data_to_db(session: Session, filename: str, file_hash: str, chunk_recor
             session.flush() 
 
         for record in chunk_records:
+            if "embedding" not in record:
+                raise ValueError(
+                    f"Missing embedding for chunk {record['chunk_id']}"
+                )
             stmt = pg_insert(DocumentChunk).values(
                 id=record["chunk_id"],
                 document_id=doc.id,
