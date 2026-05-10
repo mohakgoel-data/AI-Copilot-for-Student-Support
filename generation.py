@@ -42,7 +42,10 @@ def assemble_prompt(query_text, search_results):
     """
     return final_prompt
 
-def generate_response(session: Session, student_query: str, user_id:int):
+def generate_response(session: Session, student_query: str):
+
+    
+
 
     if len(student_query) > MAX_QUERY_LENGTH:
         return {
