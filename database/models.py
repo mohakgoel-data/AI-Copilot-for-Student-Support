@@ -17,6 +17,12 @@ class Document(Base):
 
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
+    chunks = relationship(
+        "DocumentChunk",
+        back_populates="document",
+        cascade="all, delete-orphan"
+    )
+
 
 class DocumentChunk(Base):
     __tablename__ = "document_chunks"
@@ -31,7 +37,10 @@ class DocumentChunk(Base):
 
     metadata_json = Column(JSON)
 
-    document = relationship("Document")
+    document = relationship(
+        "Document",
+        back_populates="chunks"
+    )
 
 class User(Base):
     __tablename__ = "users"
@@ -57,4 +66,7 @@ class ChatMessage(Base):
 
     source_metadata = Column(JSON, nullable=True)
 
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    created_at = Column(
+        DateTime(timezone=True),
+        server_default=func.now()
+    )

@@ -8,6 +8,11 @@ from database.models import User
 from ingestion_pipeline.parser import parse_document
 from ingestion_pipeline.embeddings_pipeline import build_vector_records
 from generation import generate_response
+from fastapi import HTTPException
+from database.database_manager import delete_document
+from fastapi.security import OAuth2PasswordRequestForm
+from auth import get_current_user_data, TokenResponse, create_access_token, UserRegister,verify_password, get_current_user
+
 from auth import hash_password, TokenResponse, create_access_token, UserRegister,verify_password, get_current_user
 import os
 from dotenv import load_dotenv
@@ -117,6 +122,30 @@ def login(
     )
     return {"access_token": token}
 
+app.include_router(router)
+
+@app.delete("/documents/{document_id}")
+def remove_document(
+    document_id: int,
+    db: Session = Depends(get_db)
+):
+
+    deleted_doc = delete_document(
+        session=db,
+        document_id=document_id
+    )
+
+    if not deleted_doc:
+        raise HTTPException(
+            status_code=404,
+            detail="Document not found"
+        )
+
+    return {
+        "message": "Document deleted successfully",
+        "document_id": document_id,
+        "filename": deleted_doc.filename
+    }
 ADMIN_CREATION_KEY = os.getenv("ADMIN_CREATION_KEY")
 
 @router.post("/register-admin")
