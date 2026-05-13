@@ -16,6 +16,3 @@ google-genai
 python-multipart
 requests
 pydantic
-hashlib
-json
-typing
