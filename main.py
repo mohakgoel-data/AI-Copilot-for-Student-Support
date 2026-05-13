@@ -1,7 +1,7 @@
 from fastapi import FastAPI, UploadFile, File, Depends, HTTPException, Header, APIRouter, status
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
-
+from fastapi.responses import StreamingResponse
 from database.db import SessionLocal
 from database.database_manager import sync_data_to_db
 from database.models import User
@@ -38,13 +38,19 @@ def get_db():
 
 @app.post("/chat")
 def chat(
-    query: str, 
-    db: Session = Depends(get_db), 
-    user_data: dict = Depends(get_current_user) 
+    query: str,
+    db: Session = Depends(get_db),
+    user_data: dict = Depends(get_current_user)
 ):
     user_id = user_data["user_id"]
-    return generate_response(db, query, user_id=user_id)
-
+    return StreamingResponse(
+        generate_response(db, query, user_id=user_id),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "X-Accel-Buffering": "no"
+        }
+    )
 @app.post("/upload")
 async def upload_pdf(file: UploadFile = File(...), db: Session = Depends(get_db),user_data: dict = Depends(get_current_user)):
 

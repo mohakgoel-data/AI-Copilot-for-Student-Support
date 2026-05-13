@@ -22,7 +22,8 @@ def refine_logical_blocks(logical_blocks: list, doc_id: str):
 
         for chunk_index, text in enumerate(sub_texts):
             clean_text = text.strip()
-            if len(clean_text) < 50: 
+                
+            if len(clean_text.split()) < 5:
                 continue
 
             hash_input = f"{doc_id}-{clean_text}-{chunk_index}"
@@ -39,5 +40,5 @@ def refine_logical_blocks(logical_blocks: list, doc_id: str):
                 }
             }
             final_chunks.append(chunk_data)
-            
+    print(f"The chunks eliminated: {len(logical_blocks)-len(final_chunks)}")        
     return final_chunks
