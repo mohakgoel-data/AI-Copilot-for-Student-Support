@@ -63,7 +63,7 @@ def get_current_user_data(token: str):
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/login")
 
 def get_current_user(token: str = Depends(oauth2_scheme)):
-    # We use the 'get_current_user_data' function we built in auth.py
+       
     user_data = get_current_user_data(token) 
     if not user_data:
         raise HTTPException(status_code=401, detail="Invalid wristband!")

@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 from dotenv import load_dotenv
 from retrieval import get_query_embedding,search_relevant_chunks,get_chat_history,optimize_search_query
 from database.database_manager import save_message
+import json
 
 load_dotenv()
 client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
@@ -42,22 +43,22 @@ def assemble_prompt(query_text, search_results):
     """
     return final_prompt
 
-def generate_response(session: Session, student_query: str):
-
-    
-
+def generate_response(session: Session, student_query: str, user_id):
 
     if len(student_query) > MAX_QUERY_LENGTH:
-        return {
-            "answer": f"Query exceeds maximum allowed length of {MAX_QUERY_LENGTH} characters.",
-            "sources": []
-        }
-    
-    history=get_chat_history(session, user_id, limit=6)
+        yield f"data: {json.dumps({'type': 'error', 'message': f'Query exceeds maximum allowed length of {MAX_QUERY_LENGTH} characters.'})}\n\n"
+        return
+
+    history = get_chat_history(session, user_id, limit=5)
     search_term = optimize_search_query(history, student_query)
     query_vector = get_query_embedding(search_term)
-    raw_results = search_relevant_chunks(session, query_vector, top_k=6)
-    filtered_results = [r for r in raw_results if r['score'] > 0.47]
+
+    if query_vector is None:
+        yield f"data: {json.dumps({'type': 'error', 'message': 'Failed to process query.'})}\n\n"
+        return
+
+    raw_results = search_relevant_chunks(session, query_vector, top_k=4)
+    filtered_results = [r for r in raw_results if r['score'] > 0.45]
 
     source_metadata = [
         {
@@ -68,18 +69,21 @@ def generate_response(session: Session, student_query: str):
     ]
 
     if not filtered_results:
-        return {
-            "answer": "I am sorry, but I don't have information on that in my records.",
-            "sources": []
-        }
+        yield f"data: {json.dumps({'type': 'error', 'message': "I am sorry, but I don't have information on that in my records."})}\n\n"
+        return
 
     prompt = assemble_prompt(student_query, filtered_results)
 
     try:
-        response = client.models.generate_content(
+        full_response = ""
+
+        for chunk in client.models.generate_content_stream(
             model="gemini-3-flash-preview",
             contents=prompt
-        )
+        ):
+            if chunk.text:
+                full_response += chunk.text
+                yield f"data: {json.dumps({'type': 'chunk', 'text': chunk.text})}\n\n"
 
         save_message(
             session=session,
@@ -91,18 +95,12 @@ def generate_response(session: Session, student_query: str):
             session=session,
             user_id=user_id,
             role="model",
-            content=response.text,
+            content=full_response,
             source_metadata=source_metadata
         )
-        
-        return {
-            "answer": response.text,
-            "sources": filtered_results 
-        }
+
+        yield f"data: {json.dumps({'type': 'done', 'sources': source_metadata})}\n\n"
 
     except Exception as e:
         print(f"Generation Error: {e}")
-        return {
-            "answer": "An error occurred while generating a response.",
-            "sources": []
-        }
+        yield f"data: {json.dumps({'type': 'error', 'message': 'An error occurred while generating a response.'})}\n\n"

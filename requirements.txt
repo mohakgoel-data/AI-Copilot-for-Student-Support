@@ -6,6 +6,8 @@ datetime
 langchain
 langchain-text-splitters
 FastAPI
+uvicorn
 python-jose
 passlib
 bcrypt
+google-genai

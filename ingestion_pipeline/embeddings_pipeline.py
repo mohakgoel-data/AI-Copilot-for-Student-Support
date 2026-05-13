@@ -2,12 +2,12 @@ import hashlib
 from google import genai
 import os
 from dotenv import load_dotenv
+import asyncio
 
 load_dotenv()
 
 client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
 
-import asyncio
 
 TPM_LIMIT = 30000
 AVG_TOKENS_PER_CHUNK = 200
