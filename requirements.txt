@@ -16,3 +16,4 @@ google-genai
 python-multipart
 requests
 pydantic
+email-validator
