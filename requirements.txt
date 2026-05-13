@@ -6,6 +6,7 @@ dotenv
 llama_cloud
 langchain
 langchain-text-splitters
+llama-index
 FastAPI
 uvicorn
 python-jose
