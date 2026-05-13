@@ -1,5 +1,6 @@
 alembic
 sqlalchemy
+pgvector
 psycopg2-binary
 dotenv
 llama_cloud
