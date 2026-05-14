@@ -65,19 +65,24 @@ def save_message(session, user_id, role, content, source_metadata=None):
         session.rollback()
         print(f"Failed to save message to DB: {e}")
         return None
+    finally:
+        session.close()
     
 
 def delete_document(session, document_id: int):
+    try:
 
-    document = (
-        session.query(Document)
-        .filter(Document.id == document_id)
-        .first()
-    )
+        document = (
+            session.query(Document)
+            .filter(Document.id == document_id)
+            .first()
+        )
 
-    if not document:
-        return None
+        if not document:
+            return None
 
-    session.delete(document)
-    session.commit()
-    return document
+        session.delete(document)
+        session.commit()
+        return document
+    finally:
+        session.close()
