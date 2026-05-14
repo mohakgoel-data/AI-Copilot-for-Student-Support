@@ -20,10 +20,27 @@ import os
 from dotenv import load_dotenv
 import hashlib
 
+from contextlib import closing
+
+from retrieval import get_query_embedding
+
+from database.db import SessionLocal
+
 
 
 load_dotenv()
 app = FastAPI()
+
+def warmup():
+    print("Warming up AI pipeline...")
+    try:
+        get_query_embedding("hello")
+        with closing(SessionLocal()) as db:
+            db.execute("SELECT 1")
+        print("Warmup complete.")
+    except Exception as e:
+        print(f"Warmup failed: {e}")
+
 
 MAX_FILE_SIZE = 10 * 1024 * 1024
 
@@ -42,6 +59,7 @@ def chat(
     db: Session = Depends(get_db),
     user_data: dict = Depends(get_current_user)
 ):
+
     user_id = user_data["user_id"]
     return StreamingResponse(
         generate_response(db, query, user_id=user_id),
@@ -51,6 +69,7 @@ def chat(
             "X-Accel-Buffering": "no"
         }
     )
+
 @app.post("/upload")
 async def upload_pdf(file: UploadFile = File(...), db: Session = Depends(get_db),user_data: dict = Depends(get_current_user)):
 
