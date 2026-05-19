@@ -3,22 +3,22 @@ from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 from fastapi.responses import StreamingResponse
 from database.db import SessionLocal
-from database.database_manager import sync_data_to_db
+# from database.database_manager import sync_data_to_db
 from database.models import User
-from ingestion_pipeline.parser import parse_document
-from ingestion_pipeline.llama_index_pipeline import process_markdown
-from ingestion_pipeline.refinement import refine_logical_blocks
-from ingestion_pipeline.embeddings_pipeline import build_vector_records_safe
+# from ingestion_pipeline.parser import parse_document
+# from ingestion_pipeline.llama_index_pipeline import process_markdown
+# from ingestion_pipeline.refinement import refine_logical_blocks
+# from ingestion_pipeline.embeddings_pipeline import build_vector_records_safe
 from generation import generate_response
 from fastapi import HTTPException
-from database.database_manager import delete_document
+# from database.database_manager import delete_document
 from fastapi.security import OAuth2PasswordRequestForm
-from auth import get_current_user_data, TokenResponse, create_access_token, UserRegister,verify_password, get_current_user
+from auth import TokenResponse, create_access_token, UserRegister,verify_password, get_current_user
 
 from auth import hash_password, TokenResponse, create_access_token, UserRegister,verify_password, get_current_user
 import os
 from dotenv import load_dotenv
-import hashlib
+# import hashlib
 
 
 
@@ -51,73 +51,73 @@ def chat(
             "X-Accel-Buffering": "no"
         }
     )
-@app.post("/upload")
-async def upload_pdf(file: UploadFile = File(...), db: Session = Depends(get_db),user_data: dict = Depends(get_current_user)):
+# @app.post("/upload")
+# async def upload_pdf(file: UploadFile = File(...), db: Session = Depends(get_db),user_data: dict = Depends(get_current_user)):
 
-    if not user_data.get("is_admin"):
-        raise HTTPException(status_code=403, detail="Only admins can upload documents.")
+#     if not user_data.get("is_admin"):
+#         raise HTTPException(status_code=403, detail="Only admins can upload documents.")
     
-    file_bytes = await file.read()
+#     file_bytes = await file.read()
 
-    if len(file_bytes) > MAX_FILE_SIZE:
-        return {
-            "error": "PDF exceeds maximum allowed size of 10 MB."
-        }
+#     if len(file_bytes) > MAX_FILE_SIZE:
+#         return {
+#             "error": "PDF exceeds maximum allowed size of 10 MB."
+#         }
     
-    file_hash = hashlib.sha256(file_bytes).hexdigest()
+#     file_hash = hashlib.sha256(file_bytes).hexdigest()
 
-    file.file.seek(0)
+#     file.file.seek(0)
 
-    text_data = parse_document(file.file)
+#     text_data = parse_document(file.file)
 
-    if not text_data or not text_data.strip():
-        return {"error": "No text found in PDF"}
+#     if not text_data or not text_data.strip():
+#         return {"error": "No text found in PDF"}
 
-    logical_blocks = process_markdown(
-    markdown_text=text_data,
-    file_path=file.filename
-    )
-    final_chunks = refine_logical_blocks(logical_blocks, file_hash)
+#     logical_blocks = process_markdown(
+#     markdown_text=text_data,
+#     file_path=file.filename
+#     )
+#     final_chunks = refine_logical_blocks(logical_blocks, file_hash)
 
-    records = await build_vector_records_safe(final_chunks, file_hash)
+#     records = await build_vector_records_safe(final_chunks, file_hash)
 
-    doc_id = sync_data_to_db(db, file.filename, file_hash, records)
+#     doc_id = sync_data_to_db(db, file.filename, file_hash, records)
 
-    return {
-        "message": "Upload successful",
-        "doc_id": doc_id,
-        "total_chunks": len(records)
-    }
+#     return {
+#         "message": "Upload successful",
+#         "doc_id": doc_id,
+#         "total_chunks": len(records)
+#     }
 
-@app.delete("/documents/{document_id}")
-def remove_document(
-    document_id: int,
-    db: Session = Depends(get_db),
-    user_data: dict = Depends(get_current_user)
-):
+# @app.delete("/documents/{document_id}")
+# def remove_document(
+#     document_id: int,
+#     db: Session = Depends(get_db),
+#     user_data: dict = Depends(get_current_user)
+# ):
 
-    if not user_data.get("is_admin"):
-        raise HTTPException(
-            status_code=403,
-            detail="Only admins can delete documents."
-        )
+#     if not user_data.get("is_admin"):
+#         raise HTTPException(
+#             status_code=403,
+#             detail="Only admins can delete documents."
+#         )
 
-    deleted_doc = delete_document(
-        session=db,
-        document_id=document_id
-    )
+#     deleted_doc = delete_document(
+#         session=db,
+#         document_id=document_id
+#     )
 
-    if not deleted_doc:
-        raise HTTPException(
-            status_code=404,
-            detail="Document not found"
-        )
+#     if not deleted_doc:
+#         raise HTTPException(
+#             status_code=404,
+#             detail="Document not found"
+#         )
 
-    return {
-        "message": "Document deleted successfully",
-        "document_id": document_id,
-        "filename": deleted_doc.filename
-    }
+#     return {
+#         "message": "Document deleted successfully",
+#         "document_id": document_id,
+#         "filename": deleted_doc.filename
+#     }
 
 router = APIRouter(
     prefix="/auth", # This adds '/auth' to the start of all these routes
